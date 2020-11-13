@@ -55,7 +55,7 @@ int hide_chunk(char* path_to_jpeg, char* chunk, size_t chunk_size)
     }
     fwrite(data_to_write, 1,size_of_result,jpg); // overwrite file with data in buffer
 
-
+    free(data_to_write);
 	return 0;	
 }
 
