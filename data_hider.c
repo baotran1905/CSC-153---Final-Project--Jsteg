@@ -59,3 +59,12 @@ int hide_chunk(char* path_to_jpeg, char* chunk, size_t chunk_size)
 	return 0;	
 }
 
+
+int main()
+{
+    
+    char* test_jpg = "/media/Enclave/school/sac_state/Courses/2020/Fall/CSC153/CSC-153---Final-Project/chapel_mountain_sky_alps.jpg";
+    char test_chunk[14]= "This is a test";
+
+    hide_chunk(test_jpg, test_chunk, 14);
+}
