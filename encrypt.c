@@ -227,6 +227,71 @@ void perm152ctr(unsigned char *in,    // Input buffer
     }
 }
 
+/*------------------------encrypt_siv-----------------------------------------*/
+void perm152siv_encrypt(unsigned char *k, int kbytes,
+                        unsigned char *n, int nbytes,
+                        unsigned char *p, int pbytes,
+                        unsigned char *siv, unsigned char *c)
+{
+    int i = 0;
+    unsigned char k_temp[32];
+    memcpy(k_temp, k, kbytes);
+    // padded zero to 32 bytes
+    for (i = kbytes; i < 32; i++)
+    {
+        k_temp[i] = (unsigned char)0;
+    }
+
+    unsigned char n_temp[16];
+    memcpy(n_temp, n, nbytes);
+    // n padded zero to 16 bytes 
+    for (i = nbytes; i < 16; i++)
+    {
+        n_temp[i] = (unsigned char)0;
+    }
+
+    unsigned int size = kbytes + nbytes + pbytes;   
+    
+    //allocate the to_hash array
+    unsigned char* to_hash = (unsigned char *) malloc(48 + pbytes);
+    
+    // padd k bytes into to_hash
+    for (i = 0; i < 32; i++)
+    {
+        to_hash[i] = k_temp[i];
+    }
+
+    // Padd nbytes into to_hash
+    for (i = 0; i < 16; i++)
+    {
+        to_hash[kbytes + i] = n_temp[i];
+    }
+    
+    // Padd pbytes into to_hash
+    for (i = 0; i < pbytes; i++)
+    {
+        to_hash[kbytes + nbytes + i] = p[i];
+    } 
+
+    // hash to_hash array by perm152hash
+    perm152hash(to_hash, size, to_hash);
+    
+    // copy first 16 bytes from to_hash to siv
+    memcpy(siv, to_hash, 16);
+    
+    unsigned char block[64];
+    // padd siv into block
+    memcpy(block, siv, 16);
+    for (i = 16; i < 64; i++)
+    {
+        block[i] = (unsigned char)0;
+    }
+    perm152ctr(p, c, pbytes, block, k, kbytes);
+    
+    // free the allocated array
+    free(memset(to_hash, 0, 48 + pbytes));
+}   
+
 /******************************************************************************
  *                              Encrypt File                                   *
  ******************************************************************************
