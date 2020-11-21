@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <gcrypt.h>
+#include <sys/stat.h>
 
 /******************************************************************************
  *                            Ignore - Used functions                                     *
@@ -84,6 +86,15 @@ void perm152 (unsigned char *in, unsigned char * out)
 }
 
 /*------------------------hash---------------------------------------------------*/
+static void xor(unsigned char *dst, unsigned char *src, int num_bytes)
+{
+    int i = 0;
+    for (i; i < num_bytes; i++)
+    {
+        dst[i] ^= src[i];
+    }
+}
+
 /**
  *    Function to hash m bytes input and return a 32 bytes output using
  *     perm 152
@@ -227,7 +238,7 @@ void perm152ctr(unsigned char *in,    // Input buffer
     }
 }
 
-/*------------------------encrypt_siv-----------------------------------------*/
+/*perm152 siv*/
 void perm152siv_encrypt(unsigned char *k, int kbytes,
                         unsigned char *n, int nbytes,
                         unsigned char *p, int pbytes,
@@ -292,6 +303,82 @@ void perm152siv_encrypt(unsigned char *k, int kbytes,
     free(memset(to_hash, 0, 48 + pbytes));
 }   
 
+
+int perm152siv_decrypt(unsigned char *k, int kbytes,
+                       unsigned char *n, int nbytes,
+                       unsigned char *c, int cbytes,
+                       unsigned char *siv, unsigned char *p)
+{
+    unsigned char block[64];
+    // padd siv into block
+    memcpy(block, siv, 16);
+    
+    int i = 0;
+    // padd 48 bytes zero to block
+    for (i = 16; i < 64; i++)
+    {
+        block[i] = (unsigned char)0;
+    }
+    
+    perm152ctr(c, p, cbytes, block, k, kbytes);
+    
+    unsigned int size = kbytes + nbytes + cbytes;
+    
+    // allocated the to_hash function
+    unsigned char *to_hash = (unsigned char*) malloc(48+cbytes);
+    unsigned char k_temp[32];
+    memcpy(k_temp, k, kbytes);
+    // padd 0 to k array
+    for (i = kbytes; i < 32; i++)
+    {
+        k_temp[i] = (unsigned char)0;
+    }
+
+    unsigned char n_temp[16];
+    memcpy(n_temp, n, nbytes);
+    // padd 0 to n array
+    for (i = nbytes; i < 16; i++)
+    {
+        n_temp[i] = (unsigned char)0;
+    }
+
+    // padd k bytes to to_hash
+    for (i = 0; i < 32; i++)
+    {
+        to_hash[i] = k_temp[i];
+    }
+
+    // Pdd n bytes to to_hash
+    for (i = 0; i < 16; i++)
+    {
+        to_hash[kbytes + i] = n_temp[i];
+    }
+    
+    // Padd cbytes to to_hash
+    for (i = 0; i < cbytes; i++)
+    {
+        to_hash[kbytes + nbytes + i] = p[i];
+    } 
+    
+    unsigned char temp[16];
+    perm152hash(to_hash, size, to_hash);
+    
+    // copy the first 16 bytes from to_hash to temp
+    memcpy(temp, to_hash, 16);
+    
+    // if siv == first 16 bytes of the to_hash
+    if (memcmp(siv, temp, 16) == 0)
+        return 0;
+    else
+        return -1;
+    
+    // free the allocated array
+    free(memset(to_hash, 0, 48+cbytes));
+}
+
+
+
+
 /******************************************************************************
  *                              Encrypt File                                   *
  ******************************************************************************
@@ -299,7 +386,7 @@ void perm152siv_encrypt(unsigned char *k, int kbytes,
 void encrypt_file(char* file_in_path, char* file_out_path)
 {
     struct stat st_file;
-    if (stat(file_in_path, & st_file) == -1)
+    if (stat(file_in_path, &st_file) == -1)
     {
         fprintf(stderr, "Error when open file %s \n",
                 file_in_path);
@@ -311,7 +398,7 @@ void encrypt_file(char* file_in_path, char* file_out_path)
     
     // copy file byte into array (plain text):
     unsigned char* p = (unsigned char*)malloc(size);
-    FILE* file = fopen(file_in_path, "r")
+    FILE* file = fopen(file_in_path, "r");
     fread(p, 1, size, file);
     fclose(file);
     
@@ -333,4 +420,13 @@ void encrypt_file(char* file_in_path, char* file_out_path)
 
     free(p);
     free(c);
+}
+
+int main()
+{
+    char* in = "/mnt/c/Users/Admin/Desktop/CSC/CSC 153/in.txt";
+    char* out = "/mnt/c/Users/Admin/Desktop/CSC/CSC 153/out.txt";
+    encrypt_file(in, out);
+    
+    return 0;
 }
