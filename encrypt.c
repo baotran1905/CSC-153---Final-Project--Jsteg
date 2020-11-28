@@ -9,7 +9,7 @@
  *                            Ignore - Used functions                                     *
  ******************************************************************************
  */
-/*---------------------------Perm 152----------------------------------------*/
+/*---------------------------Perm ----------------------------------------*/
 /**
  * Rotate left the bits of 32-bit value by n-times.
  *
@@ -53,15 +53,15 @@ static void update (uint32_t *w, uint32_t *x, uint32_t *y, uint32_t *z)
 
 /**
  *    Function to copy 64 bytes number into array of 16 32-bit numbers.
- *    Use the perm152 function to randomize the bits of these nubmers
+ *    Use the perm function to randomize the bits of these nubmers
  *  and pass it back to the array. 
  *
  * @param[in]    64 bytes in
  *
- * @param[out]   64 bytes out after randomize by perm152 function 
+ * @param[out]   64 bytes out after randomize by perm function 
  *
  */
-void perm152 (unsigned char *in, unsigned char * out)
+void perm (unsigned char *in, unsigned char * out)
 {
     uint32_t a[16];
     
@@ -97,14 +97,14 @@ static void xor(unsigned char *dst, unsigned char *src, int num_bytes)
 
 /**
  *    Function to hash m bytes input and return a 32 bytes output using
- *     perm 152
+ *     perm 
  *
  * @param[in]    m bytes input
  *
  * @param[out]   32 bytes output
  *
  */
-void perm152hash(unsigned char *m, int mbytes, unsigned char *res)
+void permhash(unsigned char *m, int mbytes, unsigned char *res)
 {
     int r = 32, c = 32, b = 32;
    
@@ -125,7 +125,7 @@ void perm152hash(unsigned char *m, int mbytes, unsigned char *res)
         memcpy(temp, m, r); // copy r bytes from m to temp
         xor(block, temp, r); // xor first rate bytes of block with
                                 // rate-byte in temp 
-        perm152(block, block);  // perm 152 block value
+        perm(block, block);  // perm  block value
         mbytes -= r;  
         m += r;
     }
@@ -137,12 +137,12 @@ void perm152hash(unsigned char *m, int mbytes, unsigned char *res)
         temp[i] = (unsigned char)0;
     
     xor(block, temp, r);
-    perm152(block, block);
+    perm(block, block);
 
     
     if (b > r) // if the number of bytes of output is greater than rate
     {
-        perm152(block, block); // perm block 1 more time
+        perm(block, block); // perm block 1 more time
         memcpy(res, block, b-r); // copy the first b-r bytes of block to result
     }
     else // if not
@@ -150,12 +150,12 @@ void perm152hash(unsigned char *m, int mbytes, unsigned char *res)
 }
 
 
-/*------------------------perm152ctr------------------------------------------------*/
+/*------------------------permctr------------------------------------------------*/
 // in and out are pointers to 64-byte buffers
 // key points to 0-to-64-byte buffer, kbytes indicates it's length
-// Computes: (perm152(in xor key) xor key) and writes 64-bytes to out
+// Computes: (perm(in xor key) xor key) and writes 64-bytes to out
 //           key has (64 - kbytes) zero bytes appended to its end
-static void perm152_bc(unsigned char *in, unsigned char *out,
+static void perm_bc(unsigned char *in, unsigned char *out,
                        unsigned char *key, int kbytes)
 {
     unsigned char perm_in[64];
@@ -171,8 +171,8 @@ static void perm152_bc(unsigned char *in, unsigned char *out,
         perm_in[i] = perm_in[i] ^ key[i];
     }
     
-    // perm152 perm_in to perm_out
-    perm152(perm_in, perm_out);
+    // perm perm_in to perm_out
+    perm(perm_in, perm_out);
     
     int j = 0;
     // xor key to perm_out
@@ -197,7 +197,7 @@ static void increment (unsigned char *block)
     }while (block[i+1] == 0);
 }
 
-void perm152ctr(unsigned char *in,    // Input buffer
+void permctr(unsigned char *in,    // Input buffer
                 unsigned char *out,   // Output buffer
                 int nbytes,           // Number of bytes to process
                 unsigned char *block, // A 64-byte buffer holding IV+CTR
@@ -208,8 +208,8 @@ void perm152ctr(unsigned char *in,    // Input buffer
     int len = 0;
     while (nbytes > 0)
     {
-        // perm152_bc block to buf
-        perm152_bc(block, buf, key, kbytes);
+        // perm_bc block to buf
+        perm_bc(block, buf, key, kbytes);
         
         // len = min(nbytes, 64)
         if (nbytes < 64)
@@ -238,8 +238,8 @@ void perm152ctr(unsigned char *in,    // Input buffer
     }
 }
 
-/*perm152 siv*/
-void perm152siv_encrypt(unsigned char *k, int kbytes,
+/*perm siv*/
+void permsiv_encrypt(unsigned char *k, int kbytes,
                         unsigned char *n, int nbytes,
                         unsigned char *p, int pbytes,
                         unsigned char *siv, unsigned char *c)
@@ -284,8 +284,8 @@ void perm152siv_encrypt(unsigned char *k, int kbytes,
         to_hash[kbytes + nbytes + i] = p[i];
     } 
 
-    // hash to_hash array by perm152hash
-    perm152hash(to_hash, size, to_hash);
+    // hash to_hash array by permhash
+    permhash(to_hash, size, to_hash);
     
     // copy first 16 bytes from to_hash to siv
     memcpy(siv, to_hash, 16);
@@ -297,14 +297,14 @@ void perm152siv_encrypt(unsigned char *k, int kbytes,
     {
         block[i] = (unsigned char)0;
     }
-    perm152ctr(p, c, pbytes, block, k, kbytes);
+    permctr(p, c, pbytes, block, k, kbytes);
     
     // free the allocated array
     free(memset(to_hash, 0, 48 + pbytes));
 }   
 
 
-int perm152siv_decrypt(unsigned char *k, int kbytes,
+int permsiv_decrypt(unsigned char *k, int kbytes,
                        unsigned char *n, int nbytes,
                        unsigned char *c, int cbytes,
                        unsigned char *siv, unsigned char *p)
@@ -320,7 +320,7 @@ int perm152siv_decrypt(unsigned char *k, int kbytes,
         block[i] = (unsigned char)0;
     }
     
-    perm152ctr(c, p, cbytes, block, k, kbytes);
+    permctr(c, p, cbytes, block, k, kbytes);
     
     unsigned int size = kbytes + nbytes + cbytes;
     
@@ -361,7 +361,7 @@ int perm152siv_decrypt(unsigned char *k, int kbytes,
     } 
     
     unsigned char temp[16];
-    perm152hash(to_hash, size, to_hash);
+    permhash(to_hash, size, to_hash);
     
     // copy the first 16 bytes from to_hash to temp
     memcpy(temp, to_hash, 16);
@@ -375,6 +375,8 @@ int perm152siv_decrypt(unsigned char *k, int kbytes,
     // free the allocated array
     free(memset(to_hash, 0, 48+cbytes));
 }
+
+
 
 
 /******************************************************************************
@@ -409,7 +411,7 @@ void encrypt_file(char* file_in_path, char* file_out_path)
     unsigned char siv[16];
     
     // Encrypt the data:
-    perm152siv_encrypt(k,8,n,8,p,size,siv, c);
+    permsiv_encrypt(k,8,n,8,p,size,siv, c);
     
     // Write encrypted data to output file:
     FILE* out = fopen(file_out_path, "w");
@@ -420,10 +422,6 @@ void encrypt_file(char* file_in_path, char* file_out_path)
     free(c);
 }
 
-/******************************************************************************
- *                              Decrypt File                                   *
- ******************************************************************************
- */
 void decrypt_file (char* file_in_path, char* file_out_path)
 {
     struct stat st_file;
@@ -452,11 +450,11 @@ void decrypt_file (char* file_in_path, char* file_out_path)
     unsigned char siv[16];
     
     // Encrypt the data:
-    int result = perm152siv_decrypt(k,8,n,8,c,size,siv, p);
+    int result = permsiv_decrypt(k,8,n,8,c,size,siv, p);
     
     // this is for debug
     if (result == 0)
-        printf("success");
+        printf("success\n");
     else
         printf("fail");
     
@@ -469,10 +467,6 @@ void decrypt_file (char* file_in_path, char* file_out_path)
     free(c);
 }
 
-/******************************************************************************
- *                            Main Function                                   *
- ******************************************************************************
- */
 int main()
 {
     char* in = "/mnt/c/Users/Admin/Desktop/CSC/CSC 153/153-2020f.pdf";
