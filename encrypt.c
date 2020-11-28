@@ -377,8 +377,6 @@ int perm152siv_decrypt(unsigned char *k, int kbytes,
 }
 
 
-
-
 /******************************************************************************
  *                              Encrypt File                                   *
  ******************************************************************************
@@ -422,6 +420,10 @@ void encrypt_file(char* file_in_path, char* file_out_path)
     free(c);
 }
 
+/******************************************************************************
+ *                              Decrypt File                                   *
+ ******************************************************************************
+ */
 void decrypt_file (char* file_in_path, char* file_out_path)
 {
     struct stat st_file;
@@ -467,6 +469,10 @@ void decrypt_file (char* file_in_path, char* file_out_path)
     free(c);
 }
 
+/******************************************************************************
+ *                            Main Function                                   *
+ ******************************************************************************
+ */
 int main()
 {
     char* in = "/mnt/c/Users/Admin/Desktop/CSC/CSC 153/153-2020f.pdf";
