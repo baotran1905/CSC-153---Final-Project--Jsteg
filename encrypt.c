@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <gcrypt.h>
+//#include <gcrypt.h>
 #include <sys/stat.h>
 
 /******************************************************************************
@@ -422,11 +422,59 @@ void encrypt_file(char* file_in_path, char* file_out_path)
     free(c);
 }
 
+void decrypt_file (char* file_in_path, char* file_out_path)
+{
+    struct stat st_file;
+    if (stat(file_in_path, &st_file) == -1)
+    {
+        fprintf(stderr, "Error when open file %s \n",
+                file_in_path);
+        exit(1);
+    }
+    
+    // calculate file size
+    size_t size = st_file.st_size * sizeof(unsigned char);
+    
+    // copy file byte into array (plain text):
+    unsigned char* c = (unsigned char*)malloc(size);
+    FILE* file = fopen(file_in_path, "r");
+    fread(c, 1, size, file);
+    fclose(file);
+    
+    // create array to store encrypted byte:
+    unsigned char* p = (unsigned char*)malloc(size);
+    
+    // Define key, nonce, and siv:
+    unsigned char k[8] = {1,2,3,4,5,6,7,8};
+    unsigned char n[8] = {1,2,3,4,5,6,7,8};
+    unsigned char siv[16];
+    
+    // Encrypt the data:
+    int result = perm152siv_decrypt(k,8,n,8,c,size,siv, p);
+    
+    // this is for debug
+    if (result == 0)
+        printf("success");
+    else
+        printf("fail");
+    
+    // Write encrypted data to output file:
+    FILE* out = fopen(file_out_path, "w");
+    fwrite(p, 1, size, out);
+    fclose(out);
+
+    free(p);
+    free(c);
+}
+
 int main()
 {
-    char* in = "/mnt/c/Users/Admin/Desktop/CSC/CSC 153/in.txt";
+    char* in = "/mnt/c/Users/Admin/Desktop/CSC/CSC 153/153-2020f.pdf";
     char* out = "/mnt/c/Users/Admin/Desktop/CSC/CSC 153/out.txt";
+    char* out3 = "/mnt/c/Users/Admin/Desktop/CSC/CSC 153/out3.txt";
+   
     encrypt_file(in, out);
-    
+    decrypt_file(out, out3);
+     
     return 0;
 }
