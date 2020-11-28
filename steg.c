@@ -585,7 +585,7 @@ unsigned char* extract_chunk(char* path_to_jpeg, int* size)
     {
         chunk[i] = jpg[end_of_jpg+1+i];
     }
-    //free(jpg);
+    free(jpg);
     fclose(jpgf);
     *size = ((int) size_of_chunk);
     return chunk;
@@ -764,4 +764,50 @@ void reassemble(char* jpg_directory, char* encrypt_reassemble_path)
 	
 	free(file);
     closedir(dir_path); 
+}
+
+void usage()
+{
+    printf("Usage:\njsteg {file to be hidden or recovered} {directory of jpegs to hide data in or recover it from} {mode} \nE.g. \n./jsteg /tmp/somefile.zip /tmp/some_directory/ hide\n./jsteg /tmp/somefile.zip /tmp/some_directory/ recover\n");
+}
+
+
+int main(int argc, char *argv[])
+{
+
+
+    if(argc != 4) // quit if wrong number of args
+    {
+        printf("Error - invalid number of arguments\n");
+        usage();
+        exit(2) ;
+    }
+
+
+    //options mode is either "hide" or "recover"
+    char *source=argv[1], *target_dir=argv[2], *mode=argv[3],*tmpEncFile = "/tmp/abcdefg.tmp";
+
+
+
+    if(strcmp(mode, "hide") == 0 )
+    {
+        encrypt_file(source, tmpEncFile);
+        split_file(tmpEncFile, target_dir);
+        printf("Operation completed");
+    }
+    else if(strcmp(mode, "recover") ==0)
+    {
+        reassemble(target_dir, tmpEncFile);
+        decrypt_file (tmpEncFile, source);
+        printf("Operation completed");
+    }
+    else
+    {
+        printf("Error - invalid mode specified\n");
+        usage();
+        exit(3);
+    }
+
+
+
 }
