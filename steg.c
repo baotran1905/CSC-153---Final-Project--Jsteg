@@ -454,11 +454,6 @@ void decrypt_file (char* file_in_path, char* file_out_path)
     
     // Encrypt the data:
     int result = permsiv_decrypt(k,8,n,8,c,size,siv, p);
-    // this is for debug
-    if (result == 0)
-        printf("success\n");
-    else
-        printf("fail");
     
     // Write encrypted data to output file:
     FILE* out = fopen(file_out_path, "w");
@@ -777,7 +772,7 @@ int main(int argc, char *argv[])
 
 
     //options mode is either "hide" or "recover"
-    char *source=argv[1], *target_dir=argv[2], *mode=argv[3],*tmpEncFile = "./tmpfile";
+    char *source=argv[1], *target_dir=argv[2], *mode=argv[3],*tmpEncFile = "/tmp/jsteg_tmp";
 
 
 
@@ -785,15 +780,13 @@ int main(int argc, char *argv[])
     {
         encrypt_file(source, tmpEncFile);
         split_file(tmpEncFile, target_dir);
-        printf("Operation completed");
+        printf("\nOperation completed\n");
     }
     else if(strcmp(mode, "recover") ==0)
     {
-        //TODO - remove 
-        tmpEncFile="./tmpfile_reassemble";
         reassemble(target_dir, tmpEncFile);
         decrypt_file (tmpEncFile, source);
-        printf("Operation completed");
+        printf("\nOperation completed\n");
     }
     else
     {
@@ -802,6 +795,6 @@ int main(int argc, char *argv[])
         exit(3);
     }
 
-
+    remove(tmpEncFile);
 
 }
