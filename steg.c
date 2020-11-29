@@ -290,7 +290,7 @@ void permsiv_encrypt(unsigned char *k, int kbytes,
     permhash(to_hash, size, to_hash);
     
     // copy first 16 bytes from to_hash to siv
-    memcpy(siv, to_hash, 16);
+    //memcpy(siv, to_hash, 16);
     
     unsigned char block[64];
     // padd siv into block
@@ -368,11 +368,12 @@ int permsiv_decrypt(unsigned char *k, int kbytes,
     // copy the first 16 bytes from to_hash to temp
     memcpy(temp, to_hash, 16);
     
-    // if siv == first 16 bytes of the to_hash
+    /*// if siv == first 16 bytes of the to_hash
     if (memcmp(siv, temp, 16) == 0)
         return 0;
     else
         return -1;
+    */
     
     // free the allocated array
     free(memset(to_hash, 0, 48+cbytes));
@@ -385,7 +386,7 @@ int permsiv_decrypt(unsigned char *k, int kbytes,
  *                              Encrypt File                                   *
  ******************************************************************************
  */
-void encrypt_file(char* file_in_path, char* file_out_path)
+char* encrypt_file(char* file_in_path, char* file_out_path)
 {
     struct stat st_file;
     if (stat(file_in_path, &st_file) == -1)
@@ -410,7 +411,7 @@ void encrypt_file(char* file_in_path, char* file_out_path)
     // Define key, nonce, and siv:
     unsigned char k[8] = {1,2,3,4,5,6,7,8};
     unsigned char n[8] = {1,2,3,4,5,6,7,8};
-    unsigned char siv[16];
+    unsigned char siv[16] ={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
     
     // Encrypt the data:
     permsiv_encrypt(k,8,n,8,p,size,siv, c);
@@ -449,11 +450,10 @@ void decrypt_file (char* file_in_path, char* file_out_path)
     // Define key, nonce, and siv:
     unsigned char k[8] = {1,2,3,4,5,6,7,8};
     unsigned char n[8] = {1,2,3,4,5,6,7,8};
-    unsigned char siv[16];
+    unsigned char siv[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
     
     // Encrypt the data:
     int result = permsiv_decrypt(k,8,n,8,c,size,siv, p);
-    
     // this is for debug
     if (result == 0)
         printf("success\n");
