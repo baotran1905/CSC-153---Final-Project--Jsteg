@@ -493,16 +493,12 @@ int hide_chunk(char* path_to_jpeg, char* chunk, size_t chunk_size)
 	FILE* jpg=fopen(path_to_jpeg, "r");
 
 	
-	char tmpBuffer[512];
-    int j = 0;
+    int j = 0; //keep track of where we are in the jpeg data
     int end_marker = -1; //the offset of the first free byte of memory after the final FFD9 (and the added  0x24 0xFF 0xD9 trailer we put in)
-
     //copy all of the data from the jpeg into the buffer
-    while (fread(tmpBuffer, 1, 512, jpg))
+    fread(data_to_write, 1, len, jpg);
+    for(j; j < len; j++)
     {
-        for (int i = 0; i < 512; i++)
-        {
-            data_to_write[j] = tmpBuffer[i];
             if(j > 0)
             {
                 if(data_to_write[j-1] == 0xff && data_to_write[j] == 0xd9) //  make note every time we find FFD9 
@@ -510,8 +506,6 @@ int hide_chunk(char* path_to_jpeg, char* chunk, size_t chunk_size)
                     end_marker = j; // store as end_marker until we find the last one
                 }
             }
-            j++; 
-        }
     }
     //after all the data has been copied into the buffer, figure out where the final FFD9 was and start writing data there.
 
@@ -539,7 +533,6 @@ int hide_chunk(char* path_to_jpeg, char* chunk, size_t chunk_size)
     free(data_to_write);
 	return 0;	
 }
-
 /******************************************************************************
  *                               Extract Chunk                                *
  ******************************************************************************
@@ -564,20 +557,19 @@ unsigned char* extract_chunk(char* path_to_jpeg, int* size)
 	FILE* jpgf=fopen(path_to_jpeg, "r");
 
 	
-	char tmpBuffer[512];
     int j = 0;
-    int end_of_jpg= 0; // the address of the first byte followiung ffd9
-    while (fread(tmpBuffer, 1, 512, jpgf))
+    int end_of_jpg= 0; // find the jpeg ending
+    fread(jpg, 1, len, jpgf);
+    for(j; j < len; j++)
     {
-        for (int i = 0; i < 512; i++)
-        {
-            jpg[j] = tmpBuffer[i];
-            if(jpg[j-4] == 0xff &&jpg[j-3] == 0xd9 &&jpg[j-2] == 0x24 && jpg[j-1] == 0xff && jpg[j] == 0xd9) // found the jpeg trailer
+
+            if(j > 3)
             {
-                end_of_jpg=j;
+                if(jpg[j-4] == 0xff &&jpg[j-3] == 0xd9 &&jpg[j-2] == 0x24 && jpg[j-1] == 0xFF && jpg[j] == 0xD9) // found the jpeg trailer
+                {
+                    end_of_jpg=j;
+                }
             }
-            j++; 
-        }
     }
     size_t size_of_chunk = size_of_result - (end_of_jpg+1);
  	unsigned char *chunk= (unsigned char*) malloc(size_of_chunk); // make space to copy chunk into
@@ -785,7 +777,7 @@ int main(int argc, char *argv[])
 
 
     //options mode is either "hide" or "recover"
-    char *source=argv[1], *target_dir=argv[2], *mode=argv[3],*tmpEncFile = "/tmp/abcdefg.tmp";
+    char *source=argv[1], *target_dir=argv[2], *mode=argv[3],*tmpEncFile = "./tmpfile";
 
 
 
@@ -797,6 +789,8 @@ int main(int argc, char *argv[])
     }
     else if(strcmp(mode, "recover") ==0)
     {
+        //TODO - remove 
+        tmpEncFile="./tmpfile_reassemble";
         reassemble(target_dir, tmpEncFile);
         decrypt_file (tmpEncFile, source);
         printf("Operation completed");
